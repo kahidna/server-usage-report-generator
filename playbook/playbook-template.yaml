@@ -1,0 +1,79 @@
+ - hosts: sample
+   tasks:
+   - name: Get CPU usage
+     shell: "echo $(uptime| rev | awk '{print $1\" \"$2\" \"$3 }'|rev)"
+     register: cpuload
+
+   - name: Get CPU core
+     shell: "nproc"
+     register: cpucores
+
+   - name: Get Public IP
+     uri:
+      url: "http://ipinfo.io/ip"
+      method: "GET"
+      http_agent: "curl/7.58.0"
+      return_content: yes
+     register: publicip
+
+   - name: Get Root System Size
+     shell: "df -h /|tail -1|awk '{print $2}'"
+     register: rootsize
+
+   - name: Get Root System Usage
+     shell: "df -h /|tail -1|awk '{print $3}'"
+     register: rootusage
+
+   - name: Get Root System Percentage
+     shell: "df -h /|tail -1| rev|awk '{print $2}'|rev"
+     register: rootpercentage
+
+   - name: Get Ram Size
+     shell: "free -m| grep Mem|awk '{print $2}'"
+     register: ramsize
+
+   - name: Get Ram Usage
+     shell: "free -m| grep Mem|awk '{print $3}'"
+     register: ramusage
+
+   - name: Get Swap Size
+     shell: "free -m| grep Swap|awk '{print $2}'"
+     register: swapsize
+
+   - name: Get Swap Usage
+     shell: "free -m| grep Swap|awk '{print $3}'"
+     register: swapusage
+
+   - name: Set Usage facts
+     set_fact:
+       cpu_load: "{{ cpuload.stdout_lines[0] }}"
+       cpu_cores: "{{ cpucores.stdout_lines[0]}}"
+       public_ip: "{{ publicip.content.split()[0] }}"
+       root_usage: "{{ rootusage.stdout_lines[0] }}"
+       root_size: "{{ rootsize.stdout_lines[0] }}"
+       ram_size: "{{ ramsize.stdout_lines[0] }}"
+       ram_usage: "{{ ramusage.stdout_lines[0] }}"
+       swap_size: "{{ swapsize.stdout_lines[0] }}"
+       swap_usage: "{{ swapusage.stdout_lines[0] }}"
+       root_percentage: "{{ rootpercentage.stdout_lines[0] }}"
+
+   - name: Sample Server Usage
+     debug:
+      msg: 
+        - "put number here"
+        - "{{ ansible_hostname }}"
+        - "{{ ansible_processor[2] }}"
+        - "{{ cpu_cores }}"
+        - "{{ cpu_load }}"
+        - "{{ ram_size }}"
+        - "{{ ram_usage }}"
+        - "{{ (ram_usage|int / ram_size|int * 100)| int  }}"
+        - "{{ swap_size }}"
+        - "{{ swap_usage }}"
+        - "{{ (swap_usage|int / (swap_size|int + 1)|int * 100)| int  }}"
+        - "{{ ansible_mounts[0].mount }}"
+        - "{{ ansible_mounts[0].device }}"
+        - "{{ root_size }}"
+        - "{{ root_usage }}"
+        - "{{ root_percentage }}"
+        - "{{ public_ip }}"
